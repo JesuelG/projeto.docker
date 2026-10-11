@@ -1,0 +1,36 @@
+name: Esteira DevSecOps TechSecure
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. ETAPA SOURCE: Clona o código do repositório para a máquina virtual do GitHub
+      - name: 1. Source - Checkout do Código
+        uses: actions/checkout@v4
+
+      # 2. ETAPA BUILD: Constrói os containers conforme o docker-compose.yml
+      - name: 2. Build - Construção das Imagens Docker
+        run: docker compose build
+
+      # 3. ETAPA DEPLOY: Inicializa os containers em modo desacoplado (-d)
+      - name: 3. Deploy - Homologação
+        run: docker compose up -d
+
+      # 4. ETAPA TEST: Aguarda a subida dos serviços e testa a resposta HTTP
+      - name: 4. Test - Verificação de Disponibilidade
+        run: |
+          sleep 15
+          curl -f http://localhost || exit 1
+          echo "Aplicação operacional em homologação!"
+
+      # 5. ETAPA SECURITY SCAN: Executa a varredura estática de segurança com Trivy
+      - name: 5. Security Scan - Análise de Vulnerabilidades (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'bkimminich/juice-shop'
+          format: 'table'
+          exit-code: '0'

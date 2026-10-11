@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  # Aplicação alvo principal (OWASP Juice Shop)
+  juice-shop:
+    image: bkimminich/juice-shop
+    ports:
+      - "3000:3000"
+
+  # Servidor Web / Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - juice-shop
