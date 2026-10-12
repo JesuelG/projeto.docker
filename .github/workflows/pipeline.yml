@@ -8,29 +8,41 @@ jobs:
   pipeline:
     runs-on: ubuntu-latest
     steps:
-      # 1. ETAPA SOURCE: Clona o código do repositório para a máquina virtual do GitHub
-      - name: 1. Source - Checkout do Código
+      # 1. ETAPA SOURCE
+      - name: 1. Source - Checkout do Codigo
         uses: actions/checkout@v4
 
-      # 2. ETAPA BUILD: Constrói os containers conforme o docker-compose.yml
+      # 2. ETAPA BUILD
       - name: 2. Build - Construção das Imagens Docker
         run: docker compose build
 
-      # 3. ETAPA DEPLOY: Inicializa os containers em modo desacoplado (-d)
+      # 3. ETAPA DEPLOY
       - name: 3. Deploy - Homologação
         run: docker compose up -d
 
-      # 4. ETAPA TEST: Aguarda a subida dos serviços e testa a resposta HTTP
+      # 4. ETAPA TEST
       - name: 4. Test - Verificação de Disponibilidade
         run: |
           sleep 15
           curl -f http://localhost || exit 1
           echo "Aplicação operacional em homologação!"
 
-      # 5. ETAPA SECURITY SCAN: Executa a varredura estática de segurança com Trivy
+      # 5. ETAPA SECURITY SCAN
       - name: 5. Security Scan - Análise de Vulnerabilidades (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'bkimminich/juice-shop'
           format: 'table'
           exit-code: '0'
+
+      # 6. ETAPA NOTIFICAÇÃO
+      - name: 6. Notificacao - Status Final
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "### 🚀 Status da Esteira: APROVADA" >> $GITHUB_STEP_SUMMARY
+            echo "A esteira executou o build, deploy, testes e scan de seguranca com SUCESSO!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Status da Esteira: FALHOU" >> $GITHUB_STEP_SUMMARY
+            echo "Ocorreu uma falha em uma das etapas da esteira. Verifique os logs acima." >> $GITHUB_STEP_SUMMARY
+          fi
